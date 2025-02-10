@@ -1,4 +1,5 @@
-import { _decorator, Component, Node } from 'cc';
+import { _decorator, Component, Node, Prefab } from 'cc';
+import { ResMgr } from '../Framework/ResMgr';
 
 export class GameApp extends Component {
     static _instance: GameApp = null;
@@ -10,8 +11,10 @@ export class GameApp extends Component {
 
     }
 
-    public EnterGame(): void {
+    public async EnterGame() {
         console.log("EnterGame ====!");
+        var uigamePrefab = await ResMgr.Instance.AwaitGetAsset("GUI","UIGame") as Prefab;
+        console.log(uigamePrefab);
     }
 }
 
