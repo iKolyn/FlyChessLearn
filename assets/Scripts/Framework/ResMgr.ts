@@ -1,50 +1,45 @@
 import { _decorator, assetManager, AssetManager, Component, Node, Prefab } from 'cc';
 
+//同樣也是單例模式，負責管理所有bundle資源與相關邏輯。
 export class ResMgr extends Component {
     static _instance: ResMgr = null;
-    public static get Instance():ResMgr{
+    public static get Instance(): ResMgr {
         return this._instance ??= new ResMgr();
     }
+    
 
-    public Init():void{
+    public Init() {
 
     }
 
     
-    //先加載bundle
     private async LoadBundle(bundleName: string) {
         return new Promise((resolve, reject) => {
-            assetManager.loadBundle(bundleName, (err, assetItem) => {
-                //err代表錯誤訊息的產生。如果出現了就reject回報錯誤，成功就回傳bundle。
-                err ? reject(null) : resolve(assetItem);
+            assetManager.loadBundle(bundleName, (err, bundle) => {
+                return err ? reject(err) : resolve(bundle);
             })
         })
     }
-    //再加載裡面的資源
-    private LoadAssetInBundle(b:AssetManager.Bundle,url:string,type:any = Prefab){
-        return new Promise((resolve,reject) =>{
-            b.load(url,type,(err,asset)=>{
-                err ? reject(err) : resolve(asset);
+
+    private async LoadAssetInBundle(bundle: AssetManager.Bundle, url: string, type: any = Prefab) {
+        return new Promise((resolve, reject) => {
+            bundle.load(url, type, (err, asset) => {
+                return err ? reject(null) : resolve(asset);
             })
         })
     }
-    //資源加載，用async / await取代異步
-    //使用方式：ResMgr.Instance.AwaitGetAsset("GUI","UIGame",SpriteFrame);
+
     public async AwaitGetAsset(bundleName: string, url: string, type: any = Prefab) {
-        //先加載Bundle
         var b: AssetManager.Bundle = assetManager.getBundle(bundleName);
         if (b == null) {
             b = await this.LoadBundle(bundleName) as AssetManager.Bundle;
-            if(!b){
+            if (!b) {
+                console.error("LoadBundle Fail");
                 return null;
             }
         }
-        //然後加載Bundle裡面的資源
-        var asset = await this.LoadAssetInBundle(b,url,type);
-        
+        const asset = await this.LoadAssetInBundle(b, url, type);
         return asset;
     }
 
 }
-
-
