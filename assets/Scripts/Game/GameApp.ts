@@ -1,6 +1,8 @@
-import { _decorator, Component, Node, Prefab } from 'cc';
+import { _decorator, Component, find, instantiate, Node, Prefab } from 'cc';
 import { ResMgr } from '../Framework/ResMgr';
 import { EventMgr } from '../Framework/EventMgr';
+import { UILoadingCtrl } from './UIControllers/UILoadingCtrl';
+import { GameEvent, UIGameEvent } from './Constant';
 
 //負責掌控所有遊戲邏輯的控制中心
 export class GameApp extends Component {
@@ -9,34 +11,46 @@ export class GameApp extends Component {
         return this._instance ??= new GameApp();
     }
 
-
     public Init() {
+        EventMgr.Instance.AddListener(GameEvent.UI, this.OnGameEventProcess, this);//暫時的
+    }
 
+    private OnGameEventProcess(mainEventType: number, subEventType: number, udata: any) {
+        switch (subEventType) {
+            case UIGameEvent.UILoadingEnded:
+                this.OnUILoadingEndedEvent();
+        }
+    }
+
+    private OnUILoadingEndedEvent(): void {
+        console.log("OnUILoadingEndedEvent called \n");
     }
 
     public async EnterGame() {
-        // var UIPrefab = await ResMgr.Instance.AwaitGetAsset("GUI", "UIMain") as Prefab;
-        // console.log(UIPrefab);這鞭策適用
+        //加載所有資源加載的頁面
+        var canvas = find("Canvas");
 
-        EventMgr.Instance.AddListener(1, this.OnGameStart, this);
+        // 先加載我的uiLoading頁面，在那之前場景中會出現我的Boot頁面
+        var uiLoadingPrefab = await ResMgr.Instance.AwaitGetAsset("GUI", "UILoading") as Prefab;
+        // 等到awaitGetAsset完成後，我們就可以實例化這個節點了。
+        var uiLoading = instantiate(uiLoadingPrefab);
+        uiLoading.name = uiLoadingPrefab.name;//將這個節點的名字更改為UIBoot
+        canvas.addChild(uiLoading);//將這個節點加入到canvas節點下
+        uiLoading.addComponent(UILoadingCtrl).Init();
+        // end
 
-        EventMgr.Instance.Emit(1, 10001, "GameStarted");
+        // 最後刪除我們的UIBoot節點。
+        canvas.getChildByName("UIBoot")?.destroy();
+
+        // 測試進度條
+        EventMgr.Instance.Emit(GameEvent.UI, UIGameEvent.UILoadingPer, 0.25);
         this.scheduleOnce(() => {
-            console.log("Remove Event!");
-            EventMgr.Instance.RemoveListener(1, this.OnGameStart, this);
+            EventMgr.Instance.Emit(GameEvent.UI, UIGameEvent.UILoadingPer, 0.5);
+            EventMgr.Instance.Emit(GameEvent.UI, UIGameEvent.UILoadingPer, 0.75);
+            EventMgr.Instance.Emit(GameEvent.UI, UIGameEvent.UILoadingPer, 1.0);
         }, 5);
-
-        //測試再刪除的時候有沒有刪除成功，如果不會出現OnGameStart的log就代表成功了
-        this.scheduleOnce(() => {
-            console.log("test Remove! ####");
-            EventMgr.Instance.Emit(1, 10001, "GameStarted");
-        }, 6);
+        // end
     }
-
-    private OnGameStart(mainType: number, subType: number, udata: any): void {
-        console.log(mainType, subType, udata);
-    }
-
 }
 
 
