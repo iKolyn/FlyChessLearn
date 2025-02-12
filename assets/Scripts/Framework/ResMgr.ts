@@ -16,6 +16,7 @@ export class ResMgr extends Component {
     private async LoadBundle(bundleName: string) {
         return new Promise((resolve, reject) => {
             assetManager.loadBundle(bundleName, (err, bundle) => {
+                if(err) console.error(err);
                 return err ? reject(err) : resolve(bundle);
             })
         })
