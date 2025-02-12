@@ -4,5 +4,3 @@ export class UIMainCtrl extends Component {
 
     }
 }
-
-

@@ -7,11 +7,9 @@ export class ResMgr extends Component {
         return this._instance ??= new ResMgr();
     }
     
-
     public Init() {
 
     }
-
     
     private async LoadBundle(bundleName: string) {
         return new Promise((resolve, reject) => {

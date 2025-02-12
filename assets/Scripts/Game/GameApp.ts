@@ -4,6 +4,7 @@ import { EventMgr } from '../Framework/EventMgr';
 import { UILoadingCtrl } from './UIControllers/UILoadingCtrl';
 import { GameEvent, UIGameEvent } from './Constant';
 import { UIMainCtrl } from './UIControllers/UIMainCtrl';
+import { UIConfigCtrl } from './UIControllers/UIConfigCtrl';
 
 //負責掌控所有遊戲邏輯的控制中心
 export class GameApp extends Component {
@@ -13,6 +14,7 @@ export class GameApp extends Component {
     }
 
     public Init() {
+        //這是增加所有UI處理事件的訂閱事件。
         EventMgr.Instance.AddListener(GameEvent.UI, this.OnUIEventProcess, this);
     }
 
@@ -20,30 +22,51 @@ export class GameApp extends Component {
         EventMgr.Instance.RemoveListener(GameEvent.UI, this.OnUIEventProcess, this);
     }
 
+    //當獲得到UI所發送的事件，我們會根據不同的子事件來做相對應的處理。
     private OnUIEventProcess(mainEventType: number, subEventType: number, udata: any) {
         switch (subEventType) {
-            case UIGameEvent.UILoadingEnded:
-                this.OnUILoadingEndedEvent();
+            case UIGameEvent.UILoadingEnded://UI加載完畢後，進行的處理。
+                this.OnUILoadingEndedEvent();//簡單來說會刪除防沉迷頁面，並載入初始畫面。
+            case UIGameEvent.UIConfigGame:
+                this.ConfigGame();//當加載完主畫面後，將加載頁面刪除並進入配置頁面。
+                break;
+            case UIGameEvent.UIGameStarted:
+                this.StartGameWithConfig(udata);//依照玩家選擇配置的，處理初始化並進入遊戲。
+                break;
         }
+    }
+
+    private async StartGameWithConfig(config) {
+        console.log(config);
+    }
+
+    private async ConfigGame() {
+        const canvas = find("Canvas");
+        const uiConfigPrefab = await ResMgr.Instance.AwaitGetAsset("GUI", "UIConfig") as Prefab;
+        //如果有的話就將他創建出來
+        const uiConfig = instantiate(uiConfigPrefab);
+        uiConfig.name = uiConfigPrefab.name;//重新命名該節點
+        canvas.addChild(uiConfig);//將他加入到當前的畫布中。
+        uiConfig.addComponent(UIConfigCtrl).Init();//最後在他身上加入UIMainControl並Init()初始化。
+
+        //記住，我們不能使用GM_Button的模式控制，會導致耦合。所以我們要通過事件驅動來控制。請到UIConfigCtrl查看。
     }
 
     private async OnUILoadingEndedEvent() {
         this.OnEnterMainPage();
-        
+
         const canvas = find("Canvas");
         const uiLoading = canvas.getChildByName("UILoading");
         uiLoading?.destroy();
-
     }
 
-    private async OnEnterMainPage(){
+    private async OnEnterMainPage() {
         const canvas = find("Canvas");
         const uiMainPrefab = await ResMgr.Instance.AwaitGetAsset("GUI", "UIMain") as Prefab;
         const uiMain = instantiate(uiMainPrefab);//載入UIMain的Prefab並實例化。
         uiMain.name = uiMainPrefab.name;//命名他。
         canvas.addChild(uiMain);//將他加入到當前的畫布中。
         uiMain.addComponent(UIMainCtrl).Init();//最後在他身上加入UIMainControl並Init()初始化。
-        
     }
 
     public async EnterGame() {
@@ -90,7 +113,6 @@ export class GameApp extends Component {
         for (var asset of loadAssetsMap) {
             per += deltaPer;
             //還要等加載資源
-            console.log("Loading Asset…… " + asset.url);
             await ResMgr.Instance.AwaitGetAsset(asset.abName, asset.url);
             EventMgr.Instance.Emit(GameEvent.UI, UIGameEvent.UILoadingPer, per);
         }
