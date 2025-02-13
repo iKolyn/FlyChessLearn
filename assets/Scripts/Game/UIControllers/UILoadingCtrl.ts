@@ -67,7 +67,6 @@ export class UILoadingCtrl extends Component {
         if (per <= 0) return;
 
         this.isMoving = true;//進度條要移動了
-        console.log("進度條開始移動了，移動目標值：" + per);
         this.movingTime = (per - this.per) / this.moveSpeed;//進度條移動到新的進度需要的時間(target)
         this.passedTime = 0;//到達目標所花費的時間(currentTime)
     }

@@ -1,10 +1,12 @@
-import { _decorator, Component, find, instantiate, Node, Prefab } from 'cc';
+import { _decorator, Component, find, instantiate, Node, Prefab, SpriteFrame } from 'cc';
 import { ResMgr } from '../Framework/ResMgr';
 import { EventMgr } from '../Framework/EventMgr';
 import { UILoadingCtrl } from './UIControllers/UILoadingCtrl';
 import { GameEvent, UIGameEvent } from './Constant';
 import { UIMainCtrl } from './UIControllers/UIMainCtrl';
 import { UIConfigCtrl } from './UIControllers/UIConfigCtrl';
+import { UIGameCtrl } from './UIControllers/UIGameCtrl';
+import { GM_RoomMgr } from './FlyChess/GM_RoomMgr';
 
 //負責掌控所有遊戲邏輯的控制中心
 export class GameApp extends Component {
@@ -38,6 +40,27 @@ export class GameApp extends Component {
 
     private async StartGameWithConfig(config) {
         console.log(config);
+        //先創造遊戲場景
+        const canvas = find("Canvas");
+        const uiGamePrefab = await ResMgr.Instance.AwaitGetAsset("GUI", "UIGame") as Prefab;
+        const uiGame = instantiate(uiGamePrefab);
+        uiGame.name = uiGamePrefab.name;
+        canvas.addChild(uiGame);
+        uiGame.addComponent(UIGameCtrl).Init();
+
+        //創建棋盤出來
+        const boardPrefab = await ResMgr.Instance.AwaitGetAsset("Game", "board") as Prefab;
+        const board = instantiate(boardPrefab);
+        board.name = boardPrefab.name;
+        canvas.addChild(board);
+        //進入遊戲的時候要記得帶著你的Config
+        //進入遊戲的時候要記得帶著你的Config
+        //進入遊戲的時候要記得帶著你的Config
+        board.addComponent(GM_RoomMgr).Init(config);
+
+        //刪除原來UI內容
+        canvas.getChildByName("UIMain")?.destroy();
+        canvas.getChildByName("UIConfig")?.destroy();
     }
 
     private async ConfigGame() {
@@ -79,7 +102,6 @@ export class GameApp extends Component {
         uiLoading.addComponent(UILoadingCtrl).Init();//最後在他身上加入UILoadingCtrl並Init()初始化。
 
         canvas.getChildByName("UIBoot")?.destroy();//刪除Boot節點，注意要使用?避免明明沒有還刪導致異常。
-
         //測試進度條
         // EventMgr.Instance.Emit(GameEvent.UI,UIGameEvent.UILoadingPer,0.25);
         // this.scheduleOnce(()=>{
@@ -89,21 +111,24 @@ export class GameApp extends Component {
         // this.scheduleOnce(()=>{
         //     EventMgr.Instance.Emit(GameEvent.UI,UIGameEvent.UILoadingPer,1);
         // },7);
-
         this.PreloadGameAssets();
     }
 
     private async PreloadGameAssets() {
         //因為我們沒有封裝資源，所以手動將所有要加載的資源放入一個陣列中。
         const loadAssetsMap = [
-            { abName: "GUI", url: "UIConfig" },
-            { abName: "GUI", url: "UIGame" },
-            { abName: "GUI", url: "UILoading" },
-            { abName: "GUI", url: "UIMain" },
-            { abName: "GUI", url: "UIResult" },
-            { abName: "Game", url: "board" },
-            { abName: "Game", url: "chess" },
-            { abName: "Game", url: "diceItem" },
+            { abName: "GUI", url: "UIConfig", reftype: Prefab },
+            { abName: "GUI", url: "UIGame", reftype: Prefab },
+            { abName: "GUI", url: "UILoading", reftype: Prefab },
+            { abName: "GUI", url: "UIMain", reftype: Prefab },
+            { abName: "GUI", url: "UIResult", reftype: Prefab },
+            { abName: "Game", url: "board", reftype: Prefab },
+            { abName: "Game", url: "chess", reftype: Prefab },
+            { abName: "Game", url: "diceItem", reftype: Prefab },
+            { abName: "Chesses", url: "fly_0/spriteFrame", reftype: SpriteFrame },
+            { abName: "Chesses", url: "fly_1/spriteFrame", reftype: SpriteFrame },
+            { abName: "Chesses", url: "fly_2/spriteFrame", reftype: SpriteFrame },
+            { abName: "Chesses", url: "fly_3/spriteFrame", reftype: SpriteFrame },
         ];
 
         //進度條的實作，我們利用要加載的資源數量計算進度條進度。
@@ -113,9 +138,10 @@ export class GameApp extends Component {
         for (var asset of loadAssetsMap) {
             per += deltaPer;
             //還要等加載資源
-            await ResMgr.Instance.AwaitGetAsset(asset.abName, asset.url);
+            await ResMgr.Instance.AwaitGetAsset(asset.abName, asset.url, asset.reftype);
             EventMgr.Instance.Emit(GameEvent.UI, UIGameEvent.UILoadingPer, per);
         }
+
         //全部加載完以後，避免起見直接強制EventMgr中UILoadingPer的加載進度變成1。
         EventMgr.Instance.Emit(GameEvent.UI, UIGameEvent.UILoadingPer, 1.0);
         //加載完畢以後請回到OnUILoadingEndedEvent()中處理剩餘邏輯。

@@ -30,3 +30,20 @@ export enum RoleType {
     YellowRole,
 }
 
+export enum GameState{
+    Invalid = 1,//不能用
+    Ready,//資源準備好
+    Started,//遊戲開始了
+
+    RoundTime,//輪到玩家操作
+    RoundInterval,//輪到玩家操作完，等待下一個玩家
+
+    Checked,//遊戲結算了
+}
+
+export enum ChessState{
+    Invalid = 1,
+    Stopped,//停機了
+    TakedOff,//起飛了
+    Arrived,//到達終點
+}

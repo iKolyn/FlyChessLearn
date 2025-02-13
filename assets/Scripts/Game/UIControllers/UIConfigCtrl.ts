@@ -7,6 +7,7 @@ export class UIConfigCtrl extends Component {
     public Init() {
         //這邊使用getChildByName，因為這個物件名稱是場中唯一，且不是其他人的子物件。
         const gameStart = this.node.getChildByName("btn_game");
+        //設定設置玩家的棋子顏色預設值為0
         const item:ToggleContainer = this.node.getChildByName("layout_camp").getComponent(ToggleContainer);
         item.toggleItems[0].isChecked = true;
         gameStart.on('click', this.OnStartClick, this);
@@ -29,7 +30,7 @@ export class UIConfigCtrl extends Component {
         playerNumIndex = item.toggleItems.findIndex((item) => item.isChecked);
         item = this.node.getChildByName("layout_take_off").getComponent(ToggleContainer);
         takeOffIndex = item.toggleItems.findIndex((item) => item.isChecked);
-
+        //這個config只是索引，實際的data會從GM_Config獲得，但這不是UI需要處理的。
         const configData = {
             roleIndex: roleIndex,
             playerNumIndex: playerNumIndex,
